@@ -850,17 +850,19 @@ for (const item of cart?.products || []) {
 
 
 
-
-
-
  // Get User Orders
 export const getUserOrders = async (req, res) => {
   try {
     const userId = req.user._id;
 
     const orders = await OrderSchema.find({
-      user: userId,
-    }).sort({ createdAt: -1 });
+  user: userId,
+})
+  .populate({
+    path: "products.productId",
+    select: "name category image",
+  })
+  .sort({ createdAt: -1 });
 
     const formattedOrders = orders.map((order) => ({
       orderId: order._id.toString(),
@@ -868,7 +870,7 @@ export const getUserOrders = async (req, res) => {
         ? new Date(order.createdAt).toLocaleDateString("en-GB")
         : "",
       deliveryDate: "",
-      paymentMode: "Not specified",
+     paymentMode: order.paymentMode,
       status:
         order.delivery_status === "delivered"
           ? "Delivered"
@@ -876,6 +878,7 @@ export const getUserOrders = async (req, res) => {
           ? "Dispatched"
           : "Confirmed",
       totalAmount: order.total_price,
+      address: order.address,
       products: order.products.map((item) => ({
         id: item.productId?.toString() || item.normalProductId,
         name: item.name,
