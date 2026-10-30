@@ -310,7 +310,7 @@ export const addToCart = async (req, res) => {
                 products: [{
                     product: productId,
                     quantity: 1,
-                    selectedSize: "M"
+                   selectedSize: ""
                 }]
             });
         } else {
@@ -332,7 +332,7 @@ export const addToCart = async (req, res) => {
             cart.products.push({
                 product: productId,
                 quantity: 1,
-                selectedSize: "M"
+                 selectedSize: ""
             });
         }
 
@@ -752,9 +752,10 @@ if (!Array.isArray(normalProducts)) {
     normalProductId: Number(item.id),
     name: item.name,
     image: item.image,
+      category: item.category || "",
     price: Number(item.price),
     quantity: Number(item.quantity),
-    selectedSize: item.selectedSize || "M",
+    selectedSize: item.selectedSize || "",
   });
 
   totalPrice += Number(item.price) * Number(item.quantity);
@@ -782,9 +783,10 @@ orderProducts.push({
   productId: product._id,
   name: product.name,
   image: product.image,
+  category: product.category || "",
   price: product.price,
   quantity: item.quantity,
-  selectedSize: item.selectedSize,
+ selectedSize: item.selectedSize || "",
 });
 
 
@@ -871,6 +873,8 @@ export const getUserOrders = async (req, res) => {
         : "",
       deliveryDate: "",
      paymentMode: order.paymentMode,
+     delivery_status: order.delivery_status,
+payment_status: order.payment_status,
       status:
         order.delivery_status === "delivered"
           ? "Delivered"
@@ -879,14 +883,17 @@ export const getUserOrders = async (req, res) => {
           : "Confirmed",
       totalAmount: order.total_price,
       address: order.address,
-      products: order.products.map((item) => ({
-        id: item.productId?.toString() || item.normalProductId,
-        name: item.name,
-        image: item.image,
-        price: `₹${item.price}`,
-        quantity: item.quantity,
-        selectedSize: item.selectedSize || "M",
-      })),
+
+     products: order.products.map((item) => ({
+  id: item.productId?._id?.toString() || item.normalProductId,
+  name: item.productId?.name || item.name,
+  image: item.productId?.image || item.image,
+  category: item.productId?.category || item.category || "",
+  price: `₹${item.price}`,
+  quantity: item.quantity,
+selectedSize: item.selectedSize || "",
+})),
+
     }));
 
     return res.status(200).json({

@@ -51,7 +51,7 @@ const cartSchema = Schema({
             },
             selectedSize: {
                 type: String,
-                default: "M"
+                    default: ""
             }
         }
     ]
