@@ -279,8 +279,6 @@ export const getProductDetails = async (req, res) => {
 
 
 
-
-
 export const addToCart = async (req, res) => {
     try {
         const { productId } = req.params;
