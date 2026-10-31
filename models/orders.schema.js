@@ -85,6 +85,11 @@ products: [
   default: "Not specified",
 },
 
+deliveryDate: {
+  type: String,
+  required: true,
+},
+
     total_price: {
       type: Number,
       required: true,

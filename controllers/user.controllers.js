@@ -3,6 +3,7 @@ import ProductSchema from "../models/product.schema.js";
 import CartSchema from "../models/cart.schema.js";
 import Address from "../models/address.schema.js";
 import OrderSchema from "../models/orders.schema.js";
+import SellerOrderSchema from "../models/sellerOrders.schema.js";
 import bcrypt from "bcrypt";
 
 export const getUserProfile = async (req, res) => {
@@ -683,17 +684,20 @@ export const getAddresses = async (req, res) => {
 
 
 
-//placeOrder
+
+// Place Order
 
 export const placeOrder = async (req, res) => {
   try {
     const userId = req.user._id;
-  const {
-  addressId,
-  normalProducts = [],
-  paymentMode = "Not specified",
-} = req.body;
 
+    const {
+      addressId,
+      normalProducts = [],
+      paymentMode = "Not specified",
+    } = req.body;
+
+    // Validate Address ID
     if (!addressId) {
       return res.status(400).json({
         success: false,
@@ -701,14 +705,15 @@ export const placeOrder = async (req, res) => {
       });
     }
 
+    // Validate Normal Products
+    if (!Array.isArray(normalProducts)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid normal products data.",
+      });
+    }
 
-if (!Array.isArray(normalProducts)) {
-  return res.status(400).json({
-    success: false,
-    message: "Invalid normal products data.",
-  });
-}
-
+    // Find Selected Address
     const address = await Address.findOne({
       _id: addressId,
       user: userId,
@@ -721,54 +726,51 @@ if (!Array.isArray(normalProducts)) {
       });
     }
 
+    // Get User Cart
     const cart = await CartSchema.findOne({
       user: userId,
     }).populate("products.product");
 
-   
-
     const orderProducts = [];
     let totalPrice = 0;
 
+    // Add Normal Products
     for (const item of normalProducts) {
-  if (
-    !item.id ||
-    !item.name ||
-    !item.image ||
-    !Number.isFinite(Number(item.price)) ||
-    Number(item.price) <= 0 ||
-    !Number.isInteger(Number(item.quantity)) ||
-    Number(item.quantity) < 1
-  ) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid normal product details.",
-    });
-  }
+      if (
+        !item.id ||
+        !item.name ||
+        !item.image ||
+        !Number.isFinite(Number(item.price)) ||
+        Number(item.price) <= 0 ||
+        !Number.isInteger(Number(item.quantity)) ||
+        Number(item.quantity) < 1
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid normal product details.",
+        });
+      }
 
-  orderProducts.push({
-    normalProductId: Number(item.id),
-    name: item.name,
-    image: item.image,
-      category: item.category || "",
-    price: Number(item.price),
-    quantity: Number(item.quantity),
-    selectedSize: item.selectedSize || "",
-  });
+      orderProducts.push({
+        normalProductId: Number(item.id),
+        name: item.name,
+        image: item.image,
+        category: item.category || "",
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        selectedSize: item.selectedSize || "",
+      });
 
-  totalPrice += Number(item.price) * Number(item.quantity);
-}
+      totalPrice += Number(item.price) * Number(item.quantity);
+    }
 
-   for (const item of cart?.products || []) {
-  const product = item.product;
+    // Add Seller Products
+    for (const item of cart?.products || []) {
+      const product = item.product;
 
-  if (!product) {
-    continue;
-  }
-
-
-
-
+      if (!product) {
+        continue;
+      }
 
       if (product.stock < item.quantity) {
         return res.status(400).json({
@@ -777,24 +779,33 @@ if (!Array.isArray(normalProducts)) {
         });
       }
 
-orderProducts.push({
-  productId: product._id,
-  name: product.name,
-  image: product.image,
-  category: product.category || "",
-  price: product.price,
-  quantity: item.quantity,
- selectedSize: item.selectedSize || "",
-});
-
+      orderProducts.push({
+        productId: product._id,
+        name: product.name,
+        image: product.image,
+        category: product.category || "",
+        price: product.price,
+        quantity: item.quantity,
+        selectedSize: item.selectedSize || "",
+      });
 
       totalPrice += product.price * item.quantity;
     }
 
-     const order = await OrderSchema.create({
+    // Calculate Delivery Date
+    const deliveryDate = new Date();
+    deliveryDate.setDate(deliveryDate.getDate() + 7);
+
+    const formattedDeliveryDate =
+      deliveryDate.toLocaleDateString("en-GB");
+
+    // Create Main Order
+    const order = await OrderSchema.create({
       user: userId,
+      deliveryDate: formattedDeliveryDate,
       paymentMode: paymentMode,
       products: orderProducts,
+
       address: {
         name: address.name,
         mobile: address.mobile,
@@ -804,36 +815,76 @@ orderProducts.push({
         landmark: address.landmark,
         city: address.city,
         state: address.state,
-       addressType: address.addressType,
+        addressType: address.addressType,
         addressId: address._id.toString(),
       },
-     total_price: totalPrice + (orderProducts.length > 0 ? 23 : 0),
+
+      total_price: totalPrice + (orderProducts.length > 0 ? 23 : 0),
       payment_status: "unpaid",
     });
 
+    // Create Separate Seller Orders
+    for (const item of cart?.products || []) {
+      const product = item.product;
 
-   
-for (const item of cart?.products || []) {
-  if (!item.product?._id) {
-    continue;
-  }
+      if (!product) {
+        continue;
+      }
 
-  await ProductSchema.findByIdAndUpdate(item.product._id, {
-    $inc: { stock: -item.quantity },
-  });
-}
+      if (!product.sellerId) {
+        throw new Error(
+          `Seller ID not found for ${product.name}`
+        );
+      }
 
+      await SellerOrderSchema.create({
+        user: userId,
+        seller: product.sellerId,
+        product: product._id,
+        price: product.price,
+        quantity: item.quantity,
 
+        address: {
+          name: address.name,
+          mobile: address.mobile,
+          pincode: address.pincode,
+          locality: address.locality,
+          building: address.building,
+          landmark: address.landmark,
+          city: address.city,
+          state: address.state,
+          addressType: address.addressType,
+          addressId: address._id.toString(),
+        },
+      });
+    }
+
+    // Update Product Stock
+    for (const item of cart?.products || []) {
+      if (!item.product?._id) {
+        continue;
+      }
+
+      await ProductSchema.findByIdAndUpdate(
+        item.product._id,
+        {
+          $inc: { stock: -item.quantity },
+        }
+      );
+    }
+
+    // Clear Cart
     if (cart) {
-  cart.products = [];
-  await cart.save();
-}
+      cart.products = [];
+      await cart.save();
+    }
 
     return res.status(201).json({
       success: true,
       message: "Order placed successfully.",
       order,
     });
+
   } catch (error) {
     console.error("Place order error:", error);
 
@@ -843,6 +894,7 @@ for (const item of cart?.products || []) {
     });
   }
 };
+
 
 
 
@@ -869,7 +921,7 @@ export const getUserOrders = async (req, res) => {
       orderDate: order.createdAt
         ? new Date(order.createdAt).toLocaleDateString("en-GB")
         : "",
-      deliveryDate: "",
+      deliveryDate: order.deliveryDate,
      paymentMode: order.paymentMode,
      delivery_status: order.delivery_status,
 payment_status: order.payment_status,
