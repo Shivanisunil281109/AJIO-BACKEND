@@ -27,6 +27,7 @@ const sellerOrderSchema = Schema({
         default: 1
     },
 
+    
     address: {
         name: { type: String },
         mobile: { type: String },
