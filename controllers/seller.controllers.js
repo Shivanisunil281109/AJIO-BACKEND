@@ -94,7 +94,7 @@ export const getOrders = async (req, res) => {
 
         const orders = await SellerOrderSchema.find({
             seller: sellerId
-        }).populate("user product");
+        }).populate("user product seller");
 
         return res.status(200).json({
             success: true,
@@ -105,6 +105,127 @@ export const getOrders = async (req, res) => {
         return res.status(500).json({
             error,
             success: false
+        });
+    }
+};
+
+
+
+
+
+
+
+
+
+export const changePaymentStatus = async (req, res) => {
+    try {
+        const { orderId, newStatus } = req.body;
+
+        if (!orderId || !["paid", "unpaid"].includes(newStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid order ID or payment status."
+            });
+        }
+
+        const sellerId = req.user._id;
+
+        const updatedOrder = await SellerOrderSchema.findOneAndUpdate(
+            {
+                _id: orderId,
+                seller: sellerId
+            },
+            {
+                payment_status: newStatus
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found."
+            });
+        }
+
+        const orders = await SellerOrderSchema.find({
+            seller: sellerId
+        }).populate("user product");
+
+        return res.status(200).json({
+            success: true,
+            orders
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            error
+        });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+export const changeDeliveryStatus = async (req, res) => {
+    try {
+        const { orderId, newStatus } = req.body;
+
+        if (!orderId || !["booked", "dispatched", "delivered"].includes(newStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid order ID or delivery status."
+            });
+        }
+
+        const sellerId = req.user._id;
+
+        const updatedOrder = await SellerOrderSchema.findOneAndUpdate(
+            {
+                _id: orderId,
+                seller: sellerId
+            },
+            {
+                delivery_status: newStatus
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found."
+            });
+        }
+
+        const orders = await SellerOrderSchema.find({
+            seller: sellerId
+        }).populate("user product");
+
+        return res.status(200).json({
+            success: true,
+            orders
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            error
         });
     }
 };
