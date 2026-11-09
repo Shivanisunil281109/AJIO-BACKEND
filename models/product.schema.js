@@ -35,6 +35,11 @@ const productSchema = new Schema({
         required: true
     },
 
+    mfgCost: {
+    type: Number,
+    required: true
+},
+
     stock: {
         type: Number,
         default: 0

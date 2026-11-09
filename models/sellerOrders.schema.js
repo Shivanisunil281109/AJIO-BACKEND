@@ -22,6 +22,27 @@ const sellerOrderSchema = Schema({
         type: Number
     },
 
+
+    mfgCost: {
+    type: Number
+},
+
+finalCost: {
+    type: Number
+},
+
+serviceCost: {
+    type: Number
+},
+
+deliveryCost: {
+    type: Number
+},
+
+profit: {
+    type: Number
+},
+
     quantity: {
         type: Number,
         default: 1

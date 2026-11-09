@@ -309,7 +309,7 @@ export const addToCart = async (req, res) => {
                 products: [{
                     product: productId,
                     quantity: 1,
-                   selectedSize: ""
+                    selectedSize: ""
                 }]
             });
         } else {
@@ -331,7 +331,7 @@ export const addToCart = async (req, res) => {
             cart.products.push({
                 product: productId,
                 quantity: 1,
-                 selectedSize: ""
+                selectedSize: ""
             });
         }
 
@@ -371,10 +371,13 @@ export const getCartProducts = async (req, res) => {
         const cart = await CartSchema.findOne({ user: userId })
             .populate("products.product");
 
-            console.log(
-  "Cart products:",
-  JSON.stringify(cart?.products, null, 2)
-);
+
+
+
+        console.log(
+            "Cart products:",
+            JSON.stringify(cart?.products, null, 2)
+        );
 
         if (!cart) {
             return res.status(200).json({
@@ -688,211 +691,253 @@ export const getAddresses = async (req, res) => {
 // Place Order
 
 export const placeOrder = async (req, res) => {
-  try {
-    const userId = req.user._id;
+    try {
+        const userId = req.user._id;
 
-    const {
-      addressId,
-      normalProducts = [],
-      paymentMode = "Not specified",
-    } = req.body;
+        const {
+            addressId,
+            normalProducts = [],
+            paymentMode = "Not specified",
+        } = req.body;
 
-    // Validate Address ID
-    if (!addressId) {
-      return res.status(400).json({
-        success: false,
-        message: "Please select a delivery address.",
-      });
-    }
-
-    // Validate Normal Products
-    if (!Array.isArray(normalProducts)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid normal products data.",
-      });
-    }
-
-    // Find Selected Address
-    const address = await Address.findOne({
-      _id: addressId,
-      user: userId,
-    });
-
-    if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: "Delivery address not found.",
-      });
-    }
-
-    // Get User Cart
-    const cart = await CartSchema.findOne({
-      user: userId,
-    }).populate("products.product");
-
-    const orderProducts = [];
-    let totalPrice = 0;
-
-    // Add Normal Products
-    for (const item of normalProducts) {
-      if (
-        !item.id ||
-        !item.name ||
-        !item.image ||
-        !Number.isFinite(Number(item.price)) ||
-        Number(item.price) <= 0 ||
-        !Number.isInteger(Number(item.quantity)) ||
-        Number(item.quantity) < 1
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid normal product details.",
-        });
-      }
-
-      orderProducts.push({
-        normalProductId: Number(item.id),
-        name: item.name,
-        image: item.image,
-        category: item.category || "",
-        price: Number(item.price),
-        quantity: Number(item.quantity),
-        selectedSize: item.selectedSize || "",
-      });
-
-      totalPrice += Number(item.price) * Number(item.quantity);
-    }
-
-    // Add Seller Products
-    for (const item of cart?.products || []) {
-      const product = item.product;
-
-      if (!product) {
-        continue;
-      }
-
-      if (product.stock < item.quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient stock for ${product.name}.`,
-        });
-      }
-
-      orderProducts.push({
-        productId: product._id,
-        name: product.name,
-        image: product.image,
-        category: product.category || "",
-        price: product.price,
-        quantity: item.quantity,
-        selectedSize: item.selectedSize || "",
-      });
-
-      totalPrice += product.price * item.quantity;
-    }
-
-    // Calculate Delivery Date
-    const deliveryDate = new Date();
-    deliveryDate.setDate(deliveryDate.getDate() + 7);
-
-    const formattedDeliveryDate =
-      deliveryDate.toLocaleDateString("en-GB");
-
-    // Create Main Order
-    const order = await OrderSchema.create({
-      user: userId,
-      deliveryDate: formattedDeliveryDate,
-      paymentMode: paymentMode,
-      products: orderProducts,
-
-      address: {
-        name: address.name,
-        mobile: address.mobile,
-        pincode: address.pincode,
-        locality: address.locality,
-        building: address.building,
-        landmark: address.landmark,
-        city: address.city,
-        state: address.state,
-        addressType: address.addressType,
-        addressId: address._id.toString(),
-      },
-
-      total_price: totalPrice + (orderProducts.length > 0 ? 23 : 0),
-      payment_status: "unpaid",
-    });
-
-    // Create Separate Seller Orders
-    for (const item of cart?.products || []) {
-      const product = item.product;
-
-      if (!product) {
-        continue;
-      }
-
-      if (!product.sellerId) {
-        throw new Error(
-          `Seller ID not found for ${product.name}`
-        );
-      }
-
-      await SellerOrderSchema.create({
-        user: userId,
-        seller: product.sellerId,
-        product: product._id,
-        price: product.price,
-        quantity: item.quantity,
-
-        address: {
-          name: address.name,
-          mobile: address.mobile,
-          pincode: address.pincode,
-          locality: address.locality,
-          building: address.building,
-          landmark: address.landmark,
-          city: address.city,
-          state: address.state,
-          addressType: address.addressType,
-          addressId: address._id.toString(),
-        },
-      });
-    }
-
-    // Update Product Stock
-    for (const item of cart?.products || []) {
-      if (!item.product?._id) {
-        continue;
-      }
-
-      await ProductSchema.findByIdAndUpdate(
-        item.product._id,
-        {
-          $inc: { stock: -item.quantity },
+        // Validate Address ID
+        if (!addressId) {
+            return res.status(400).json({
+                success: false,
+                message: "Please select a delivery address.",
+            });
         }
-      );
+
+        // Validate Normal Products
+        if (!Array.isArray(normalProducts)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid normal products data.",
+            });
+        }
+
+        // Find Selected Address
+        const address = await Address.findOne({
+            _id: addressId,
+            user: userId,
+        });
+
+        if (!address) {
+            return res.status(404).json({
+                success: false,
+                message: "Delivery address not found.",
+            });
+        }
+
+        // Get User Cart
+        const cart = await CartSchema.findOne({
+            user: userId,
+        }).populate("products.product");
+
+
+
+        const deliveryCost = Number(process.env.DELIVERY_COST) || 5;
+        const serviceCost = Number(process.env.SERVICE_COST) || 10;
+
+        const orderProducts = [];
+        let totalPrice = 0;
+
+        // Add Normal Products
+        for (const item of normalProducts) {
+            if (
+                !item.id ||
+                !item.name ||
+                !item.image ||
+                !Number.isFinite(Number(item.price)) ||
+                Number(item.price) <= 0 ||
+                !Number.isInteger(Number(item.quantity)) ||
+                Number(item.quantity) < 1
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid normal product details.",
+                });
+            }
+
+            orderProducts.push({
+                normalProductId: Number(item.id),
+                name: item.name,
+                image: item.image,
+                category: item.category || "",
+                price: Number(item.price),
+                quantity: Number(item.quantity),
+                selectedSize: item.selectedSize || "",
+            });
+
+            totalPrice += Number(item.price) * Number(item.quantity);
+        }
+
+        // Add Seller Products
+        for (const item of cart?.products || []) {
+            const product = item.product;
+
+
+            if (!product) {
+                continue;
+            }
+
+
+
+           
+
+
+
+
+
+            if (product.stock < item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Insufficient stock for ${product.name}.`,
+                });
+            }
+
+            orderProducts.push({
+                productId: product._id,
+                name: product.name,
+                image: product.image,
+                category: product.category || "",
+                price: product.price,
+                quantity: item.quantity,
+                selectedSize: item.selectedSize || "",
+            });
+
+            totalPrice += product.price * item.quantity;
+        }
+
+        // Calculate Delivery Date
+        const deliveryDate = new Date();
+        deliveryDate.setDate(deliveryDate.getDate() + 7);
+
+        const formattedDeliveryDate =
+            deliveryDate.toLocaleDateString("en-GB");
+
+        // Create Main Order
+        const order = await OrderSchema.create({
+            user: userId,
+            deliveryDate: formattedDeliveryDate,
+            paymentMode: paymentMode,
+            products: orderProducts,
+
+            address: {
+                name: address.name,
+                mobile: address.mobile,
+                pincode: address.pincode,
+                locality: address.locality,
+                building: address.building,
+                landmark: address.landmark,
+                city: address.city,
+                state: address.state,
+                addressType: address.addressType,
+                addressId: address._id.toString(),
+            },
+
+            total_price: totalPrice + (orderProducts.length > 0 ? 23 : 0),
+            payment_status: "unpaid",
+        });
+
+        // Create Separate Seller Orders
+        for (const item of cart?.products || []) {
+            const product = item.product;
+
+            if (!product) {
+                continue;
+            }
+
+            if (!product.sellerId) {
+                throw new Error(
+                    `Seller ID not found for ${product.name}`
+                );
+            }
+
+            const serviceCostAmount =
+                (product.price * serviceCost) / 100;
+
+            const deliveryCostAmount =
+                (product.price * deliveryCost) / 100;
+
+            const calculatedPrice =
+                product.price - serviceCostAmount - deliveryCostAmount;
+
+            const calculatedProfit =
+                (calculatedPrice - product.mfgCost) * item.quantity;
+
+
+
+
+
+
+
+
+
+
+
+            await SellerOrderSchema.create({
+                user: userId,
+                seller: product.sellerId,
+                product: product._id,
+                price: product.price,
+
+                mfgCost: product.mfgCost,
+                finalCost: calculatedPrice,
+                serviceCost: serviceCostAmount,
+                deliveryCost: deliveryCostAmount,
+                profit: calculatedProfit,
+                quantity: item.quantity,
+
+                address: {
+                    name: address.name,
+                    mobile: address.mobile,
+                    pincode: address.pincode,
+                    locality: address.locality,
+                    building: address.building,
+                    landmark: address.landmark,
+                    city: address.city,
+                    state: address.state,
+                    addressType: address.addressType,
+                    addressId: address._id.toString(),
+                },
+            });
+        }
+
+        // Update Product Stock
+        for (const item of cart?.products || []) {
+            if (!item.product?._id) {
+                continue;
+            }
+
+            await ProductSchema.findByIdAndUpdate(
+                item.product._id,
+                {
+                    $inc: { stock: -item.quantity },
+                }
+            );
+        }
+
+        // Clear Cart
+        if (cart) {
+            cart.products = [];
+            await cart.save();
+        }
+
+        return res.status(201).json({
+            success: true,
+            message: "Order placed successfully.",
+            order,
+        });
+
+    } catch (error) {
+        console.error("Place order error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to place order.",
+        });
     }
-
-    // Clear Cart
-    if (cart) {
-      cart.products = [];
-      await cart.save();
-    }
-
-    return res.status(201).json({
-      success: true,
-      message: "Order placed successfully.",
-      order,
-    });
-
-  } catch (error) {
-    console.error("Place order error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to place order.",
-    });
-  }
 };
 
 
@@ -902,62 +947,62 @@ export const placeOrder = async (req, res) => {
 
 
 
- // Get User Orders
+// Get User Orders
 export const getUserOrders = async (req, res) => {
-  try {
-    const userId = req.user._id;
+    try {
+        const userId = req.user._id;
 
-    const orders = await OrderSchema.find({
-  user: userId,
-})
-  .populate({
-    path: "products.productId",
-    select: "name category image",
-  })
-  .sort({ createdAt: -1 });
+        const orders = await OrderSchema.find({
+            user: userId,
+        })
+            .populate({
+                path: "products.productId",
+                select: "name category image",
+            })
+            .sort({ createdAt: -1 });
 
-    const formattedOrders = orders.map((order) => ({
-      orderId: order._id.toString(),
-      orderDate: order.createdAt
-        ? new Date(order.createdAt).toLocaleDateString("en-GB")
-        : "",
-      deliveryDate: order.deliveryDate,
-     paymentMode: order.paymentMode,
-     delivery_status: order.delivery_status,
-payment_status: order.payment_status,
-      status:
-        order.delivery_status === "delivered"
-          ? "Delivered"
-          : order.delivery_status === "dispatched"
-          ? "Dispatched"
-          : "Confirmed",
-      totalAmount: order.total_price,
-      address: order.address,
+        const formattedOrders = orders.map((order) => ({
+            orderId: order._id.toString(),
+            orderDate: order.createdAt
+                ? new Date(order.createdAt).toLocaleDateString("en-GB")
+                : "",
+            deliveryDate: order.deliveryDate,
+            paymentMode: order.paymentMode,
+            delivery_status: order.delivery_status,
+            payment_status: order.payment_status,
+            status:
+                order.delivery_status === "delivered"
+                    ? "Delivered"
+                    : order.delivery_status === "dispatched"
+                        ? "Dispatched"
+                        : "Confirmed",
+            totalAmount: order.total_price,
+            address: order.address,
 
-     products: order.products.map((item) => ({
-  id: item.productId?._id?.toString() || item.normalProductId,
-  name: item.productId?.name || item.name,
-  image: item.productId?.image || item.image,
-  category: item.productId?.category || item.category || "",
-  price: `₹${item.price}`,
-  quantity: item.quantity,
-selectedSize: item.selectedSize || "",
-})),
+            products: order.products.map((item) => ({
+                id: item.productId?._id?.toString() || item.normalProductId,
+                name: item.productId?.name || item.name,
+                image: item.productId?.image || item.image,
+                category: item.productId?.category || item.category || "",
+                price: `₹${item.price}`,
+                quantity: item.quantity,
+                selectedSize: item.selectedSize || "",
+            })),
 
-    }));
+        }));
 
-    return res.status(200).json({
-      success: true,
-      orders: formattedOrders,
-    });
-  } catch (error) {
-    console.error("Get user orders error:", error);
+        return res.status(200).json({
+            success: true,
+            orders: formattedOrders,
+        });
+    } catch (error) {
+        console.error("Get user orders error:", error);
 
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch orders.",
-    });
-  }
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch orders.",
+        });
+    }
 };
 
 
