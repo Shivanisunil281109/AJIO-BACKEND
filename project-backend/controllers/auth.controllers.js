@@ -142,7 +142,7 @@ export const loginController = async (req, res) => {
             message: "Something went wrong."
         });
     }
-}; 
+};
 
 
 
@@ -165,7 +165,13 @@ export const getCurrentUser = async (req, res) => {
 
 export const logoutController = async (req, res) => {
     try {
-        res.clearCookie("token");
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            path: "/",
+        });
 
         return res.status(200).json({
             success: true,
