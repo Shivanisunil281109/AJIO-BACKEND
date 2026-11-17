@@ -72,6 +72,9 @@ export const registerController = async (req, res) => {
 
 
 
+
+
+
 export const loginController = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -117,7 +120,13 @@ export const loginController = async (req, res) => {
             { expiresIn: "1d" }
         );
 
-        res.cookie("token", token);
+       
+        res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    path: "/",
+});
 
 
 
@@ -146,6 +155,20 @@ export const loginController = async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export const getCurrentUser = async (req, res) => {
     try {
         return res.status(200).json({
@@ -166,12 +189,7 @@ export const getCurrentUser = async (req, res) => {
 export const logoutController = async (req, res) => {
     try {
 
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            path: "/",
-        });
+        res.clearCookie("token");
 
         return res.status(200).json({
             success: true,
