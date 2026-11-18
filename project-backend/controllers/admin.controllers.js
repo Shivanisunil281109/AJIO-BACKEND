@@ -20,6 +20,9 @@ export const getAllSellers = async (req, res) => {
     }
 };
 
+
+
+
 export const getAllUsers = async (req, res) => {
     try {
         const users = await UserSchema.find({
@@ -37,6 +40,7 @@ export const getAllUsers = async (req, res) => {
         });
     }
 };
+
 
 export const approveSeller = async (req, res) => {
     try {
@@ -74,6 +78,9 @@ export const approveSeller = async (req, res) => {
         });
     }
 };
+
+
+
 
 
 

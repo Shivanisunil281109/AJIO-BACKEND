@@ -79,6 +79,7 @@ profit: {
 
 });
 
+
 const SellerOrderSchema = model("sellerOrders", sellerOrderSchema);
 
 export default SellerOrderSchema;

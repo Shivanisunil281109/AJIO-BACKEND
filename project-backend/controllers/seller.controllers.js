@@ -20,6 +20,7 @@ export const getProducts = async (req, res) => {
     }
 };
 
+
 export const createProduct = async (req, res) => {
     try {
         const {
@@ -91,6 +92,7 @@ export const createProduct = async (req, res) => {
 
 
 
+
 export const getOrders = async (req, res) => {
     try {
         const sellerId = req.user._id;
@@ -111,6 +113,8 @@ export const getOrders = async (req, res) => {
         });
     }
 };
+
+
 
 
 
@@ -182,6 +186,8 @@ export const changePaymentStatus = async (req, res) => {
 
 
 
+
+
 export const changeDeliveryStatus = async (req, res) => {
     try {
         const { orderId, newStatus } = req.body;
@@ -232,6 +238,10 @@ export const changeDeliveryStatus = async (req, res) => {
         });
     }
 };
+
+
+
+
 
 
 

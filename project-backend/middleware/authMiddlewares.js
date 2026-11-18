@@ -40,6 +40,7 @@ const token = async (req, res, next) => {
 
 
 
+
 export const roleValidator = (role) => {
     return (req, res, next) => {
         const roleFromToken = req.user.role;

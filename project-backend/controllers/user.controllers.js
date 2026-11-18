@@ -783,8 +783,7 @@ export const placeOrder = async (req, res) => {
 
 
 
-           
-
+    
 
 
 
@@ -939,6 +938,10 @@ export const placeOrder = async (req, res) => {
         });
     }
 };
+
+
+
+
 
 
 

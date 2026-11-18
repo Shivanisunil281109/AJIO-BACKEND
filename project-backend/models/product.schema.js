@@ -63,6 +63,7 @@ const productSchema = new Schema({
 }
 });
 
+
 const ProductSchema = model("products", productSchema);
 
 export default ProductSchema;
